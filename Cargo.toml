@@ -1,0 +1,10 @@
+[package]
+name = "crab3d"
+version = "0.1.0"
+authors = ["Theodore Bauer <ted@commure.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sdl2 = "0.34.5"
