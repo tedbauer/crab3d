@@ -1,6 +1,7 @@
 # Crab3D Engine
 
     $ brew install sdl2
+    $ brew install sdl2_gfx
     $ cargo run
 
 ## Links
