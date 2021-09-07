@@ -118,8 +118,230 @@ impl Vec4 {
 #[derive(Clone, Debug)]
 pub struct Triangle(pub Vec3, pub Vec3, pub Vec3);
 
+impl From<(Vec3, Vec3, Vec3)> for Triangle {
+    fn from((a, b, c): (Vec3, Vec3, Vec3)) -> Self {
+        Self(a, b, c)
+    }
+}
+
 impl Triangle {
     pub fn transform(&self, f: impl Fn(&Vec3) -> Vec3) -> Self {
         Self(f(&self.0), f(&self.1), f(&self.2))
     }
+}
+
+pub type Mesh = Vec<Triangle>;
+
+pub fn cube() -> Mesh {
+    vec![
+        Triangle(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 0.0,
+            },
+        ),
+        Triangle(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        ),
+        // east
+        Triangle(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        ),
+        Triangle(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
+        ),
+        // north
+        Triangle(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        ),
+        Triangle(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+        ),
+        // west
+        Triangle(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+        ),
+        Triangle(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        ),
+        // top
+        Triangle(
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        ),
+        Triangle(
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 0.0,
+            },
+        ),
+        // bottom
+        Triangle(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        ),
+        Triangle(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        ),
+    ]
 }

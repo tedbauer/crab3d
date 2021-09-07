@@ -3,14 +3,19 @@ extern crate sdl2;
 mod geometry;
 
 use crate::sdl2::gfx::primitives::DrawRenderer;
-use geometry::{rotate_x, rotate_z, Matrix4x4, Triangle, Vec3, Vec4};
+use geometry::{rotate_x, rotate_z, Matrix4x4, Triangle, Vec3, Vec4, cube};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Lines;
+use std::io::{self, BufRead};
 use std::time::Duration;
+use std::cmp::Ordering;
 
 struct Point2d {
     x: f64,
@@ -57,6 +62,49 @@ fn draw_triangle(
     //canvas.draw_line(Point::from(&c), Point::from(&a));
 }
 
+fn gen_mesh(obj_file: Lines<BufReader<File>>) -> Vec<Triangle> {
+    enum State {
+        ProcessingVertices,
+        ProcessingTriangles,
+    };
+
+    let mut vertices: Vec<Vec3> = Vec::new();
+    let mut triangles: Vec<Triangle> = Vec::new();
+
+    let mut state = State::ProcessingVertices;
+    for line in obj_file {
+        let line = line.unwrap();
+        let line_input_type = line
+            .split(' ')
+            .collect::<Vec<&str>>()
+            .get(0)
+            .unwrap()
+            .clone();
+
+        if line_input_type.eq(&"v".to_string()) {
+            let vertex_line = line.split(' ').skip(1).collect::<Vec<&str>>();
+            let a = vertex_line.get(0).unwrap().parse::<f64>().unwrap();
+            let b = vertex_line.get(1).unwrap().parse::<f64>().unwrap();
+            let c = vertex_line.get(2).unwrap().parse::<f64>().unwrap();
+
+            vertices.push(Vec3::from((a, b, c)));
+        } else if line_input_type.eq(&"f".to_string()) {
+            let triangle_line = line.split(' ').skip(1).collect::<Vec<&str>>();
+            let a_index = triangle_line.get(0).unwrap().parse::<usize>().unwrap();
+            let b_index = triangle_line.get(1).unwrap().parse::<usize>().unwrap();
+            let c_index = triangle_line.get(2).unwrap().parse::<usize>().unwrap();
+
+            triangles.push(Triangle(
+                vertices.get(a_index - 1).unwrap().clone(),
+                vertices.get(b_index - 1).unwrap().clone(),
+                vertices.get(c_index - 1).unwrap().clone(),
+            ));
+        }
+    }
+
+    triangles
+}
+
 pub fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -85,222 +133,24 @@ pub fn main() {
         [0.0, 0.0, -1.0 * z_near * q, 0.0],
     ];
 
-    let cube_mesh = vec![
-        // south
-        Triangle(
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 0.0,
-            },
-        ),
-        Triangle(
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        ),
-        // east
-        Triangle(
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-        ),
-        Triangle(
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 1.0,
-            },
-        ),
-        // north
-        Triangle(
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 1.0,
-            },
-        ),
-        Triangle(
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            },
-        ),
-        // west
-        Triangle(
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            },
-        ),
-        Triangle(
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        ),
-        // top
-        Triangle(
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-        ),
-        Triangle(
-            Vec3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 1.0,
-                z: 0.0,
-            },
-        ),
-        // bottom
-        Triangle(
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        ),
-        Triangle(
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 1.0,
-            },
-            Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            Vec3 {
-                x: 1.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        ),
-    ];
+    // BLAH
+    let lines = io::BufReader::new(File::open("models/teapot.obj").unwrap()).lines();
+    let mut mesh = gen_mesh(lines);
+    mesh.sort_by(|triangle_a, triangle_b| {
+        let z_midpoint = |triangle: &Triangle| {
+            (triangle.0.z + triangle.1.z + triangle.2.z) / 3.0
+        };
+        if z_midpoint(triangle_a) < z_midpoint(triangle_b) {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        }
+    });
+    //let mesh = cube();
 
     let mut canvas = window.into_canvas().build().unwrap();
 
-    let mut i = 5.0;
+    let mut i = 10.0;
     let mut f_theta: f64 = 0.0;
     let mut event_pump = sdl_context.event_pump().unwrap();
     let camera = Vec3 {
@@ -327,7 +177,7 @@ pub fn main() {
         //i += 0.2;
         f_theta += 0.03;
 
-        for triangle in &cube_mesh {
+        for triangle in &mesh {
             let rotated_translated_triangle = triangle.transform(|vertex: &Vec3| {
                 let rotated_triangle = Vec4::from((vertex.x, vertex.y, vertex.z, 1.0))
                     .multiply_by_matrix(&rotate_z(f_theta))
