@@ -1,6 +1,9 @@
 extern crate sdl2;
 
+mod geometry;
+
 use crate::sdl2::gfx::primitives::DrawRenderer;
+use geometry::{Matrix4x4, Triangle, Vec3, Vec4};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -26,60 +29,6 @@ impl From<&Point2d> for Point {
     }
 }
 
-struct Vec3 {
-    x: f64,
-    y: f64,
-    z: f64,
-}
-
-struct Vec4 {
-    x: f64,
-    y: f64,
-    z: f64,
-    w: f64,
-}
-
-impl Vec3 {
-    fn multiply_by_scalar(&self, scalar: f64) -> Self {
-        Vec3 {
-            x: self.x * scalar,
-            y: self.y * scalar,
-            z: self.z * scalar,
-        }
-    }
-}
-
-impl Vec4 {
-    fn multiply_by_scalar(&self, scalar: f64) -> Self {
-        Vec4 {
-            x: self.x * scalar,
-            y: self.y * scalar,
-            z: self.z * scalar,
-            w: self.w * scalar,
-        }
-    }
-
-    fn multiply_by_matrix(&self, matrix: &Matrix4x4) -> Self {
-        let x = self.x * matrix[0][0]
-            + self.y * matrix[1][0]
-            + self.z * matrix[2][0]
-            + self.w * matrix[3][0];
-        let y = self.x * matrix[0][1]
-            + self.y * matrix[1][1]
-            + self.z * matrix[2][1]
-            + self.w * matrix[3][1];
-        let z = self.x * matrix[0][2]
-            + self.y * matrix[1][2]
-            + self.z * matrix[2][2]
-            + self.w * matrix[3][2];
-        let w = self.x * matrix[0][3]
-            + self.y * matrix[1][3]
-            + self.z * matrix[2][3]
-            + self.w * matrix[3][3];
-        Vec4 { x, y, z, w }
-    }
-}
-
 fn project_vertex(vec: &Vec3, projection_matrix: &Matrix4x4) -> Vec4 {
     let projected = Vec4 {
         x: vec.x,
@@ -92,20 +41,16 @@ fn project_vertex(vec: &Vec3, projection_matrix: &Matrix4x4) -> Vec4 {
     projected.multiply_by_scalar(1.0 / scalar)
 }
 
-struct Triangle(Vec3, Vec3, Vec3);
-
-type Matrix4x4 = [[f64; 4]; 4];
-
-fn draw_triangle(a: Point2d, b: Point2d, c: Point2d, canvas: &mut Canvas<Window>, color: Color) -> () {
+fn draw_triangle(
+    a: Point2d,
+    b: Point2d,
+    c: Point2d,
+    canvas: &mut Canvas<Window>,
+    color: Color,
+) -> () {
     //canvas.set_draw_color(Color::RGB(255, 255, 255));
     canvas.filled_trigon(
-        a.x as i16,
-        a.y as i16,
-        b.x as i16,
-        b.y as i16,
-        c.x as i16,
-        c.y as i16,
-        color
+        a.x as i16, a.y as i16, b.x as i16, b.y as i16, c.x as i16, c.y as i16, color,
     );
     //canvas.draw_line(Point::from(&a), Point::from(&b));
     //canvas.draw_line(Point::from(&b), Point::from(&c));
@@ -363,6 +308,7 @@ pub fn main() {
         y: 0.0,
         z: 0.0,
     };
+    let mut light_x = 0.0;
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -395,132 +341,64 @@ pub fn main() {
             [0.0, 0.0, 0.0, 1.0],
         ];
 
-        for tri in &cube_mesh {
-            let Triangle(vertex_a_1, vertex_b_1, vertex_c_1) = tri;
+        for triangle in &cube_mesh {
+            let rotated_translated_triangle = triangle.transform(|vertex: &Vec3| {
+                let rotated_triangle = Vec4::from((vertex.x, vertex.y, vertex.z, 1.0))
+                    .multiply_by_matrix(&rotation_z)
+                    .multiply_by_matrix(&rotation_x);
 
-            let vertex_a = Vec4 {
-                x: vertex_a_1.x,
-                y: vertex_a_1.y,
-                z: vertex_a_1.z,
-                w: 1.0,
-            }
-            .multiply_by_matrix(&rotation_z)
-            .multiply_by_matrix(&rotation_x);
-            let vertex_b = Vec4 {
-                x: vertex_b_1.x,
-                y: vertex_b_1.y,
-                z: vertex_b_1.z,
-                w: 1.0,
-            }
-            .multiply_by_matrix(&rotation_z)
-            .multiply_by_matrix(&rotation_x);
-            let vertex_c = Vec4 {
-                x: vertex_c_1.x,
-                y: vertex_c_1.y,
-                z: vertex_c_1.z,
-                w: 1.0,
-            }
-            .multiply_by_matrix(&rotation_z)
-            .multiply_by_matrix(&rotation_x);
+                Vec3::from((rotated_triangle.x, rotated_triangle.y, rotated_triangle.z))
+                    .add(&(0.0, 0.0, i).into())
+            });
 
-            let a = Vec3 {
-                x: vertex_a.x,
-                y: vertex_a.y,
-                z: vertex_a.z + i,
-            };
-            let b = Vec3 {
-                x: vertex_b.x,
-                y: vertex_b.y,
-                z: vertex_b.z + i,
-            };
-            let c = Vec3 {
-                x: vertex_c.x,
-                y: vertex_c.y,
-                z: vertex_c.z + i,
-            };
+            //todo: can we do this without a clone()?
+            let Triangle(vertex_a, vertex_b, vertex_c) = rotated_translated_triangle.clone();
 
-            let line1 = Vec3 {
-                x: a.x - b.x,
-                y: a.y - b.y,
-                z: a.z - b.z,
-            };
+            let triangle_normal = vertex_a
+                .minus(&vertex_b)
+                .cross(&vertex_a.minus(&vertex_c))
+                .normalized();
 
-            let line2 = Vec3 {
-                x: a.x - c.x,
-                y: a.y - c.y,
-                z: a.z - c.z,
-            };
-
-            let normal = Vec3 {
-                x: line1.y * line2.z - line1.z * line2.y,
-                y: line1.z * line2.x - line1.x * line2.z,
-                z: line1.x * line2.y - line1.y * line2.x,
-            };
-
-            let normal_length: f64 =
-                (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).sqrt();
-
-            let normalized_normal = Vec3 {
-                x: normal.x / normal_length,
-                y: normal.y / normal_length,
-                z: normal.z / normal_length,
-            };
-
-            let t = normalized_normal.x * (a.x - camera.x)
-                + normalized_normal.y * (a.y - camera.y)
-                + normalized_normal.z * (a.z - camera.z);
-
-            if t < 0.0 {
+            if triangle_normal.dot(&vertex_a.minus(&camera)) < 0.0 {
                 let light_direction = Vec3 {
-                    x: 0.0,
+                    x: light_x,
                     y: 0.0,
                     z: -1.0,
-                };
-                let l = (light_direction.x * light_direction.x
-                    + light_direction.y * light_direction.y
-                    + light_direction.z * light_direction.z)
-                    .sqrt();
-                let light_direction_normalized = Vec3 {
-                    x: light_direction.x / l,
-                    y: light_direction.y / l,
-                    z: light_direction.z / l,
-                };
-                let dot_prod = normalized_normal.x * light_direction_normalized.x
-                    + normalized_normal.y * light_direction_normalized.y
-                    + normalized_normal.z * light_direction_normalized.z;
+                }
+                .normalized();
+                let dot_prod = triangle_normal.dot(&light_direction);
 
-                let vertex_a_projected = project_vertex(&a, &projection_matrix);
-                let vertex_b_projected = project_vertex(&b, &projection_matrix);
-                let vertex_c_projected = project_vertex(&c, &projection_matrix);
+                let Triangle(view_a, view_b, view_c) =
+                    rotated_translated_triangle.transform(|vertex| {
+                        let projected: Vec4 = Vec4::from((vertex.x, vertex.y, vertex.z, 1.0))
+                            .multiply_by_matrix(&projection_matrix);
+                        let projected: Vec3 = if projected.w != 0.0 {
+                            (
+                                projected.x / projected.w,
+                                projected.y / projected.w,
+                                projected.z / projected.w,
+                            )
+                                .into()
+                        } else {
+                            projected.into()
+                        };
 
-                let vertex_a_view = Vec3 {
-                    x: vertex_a_projected.x + 1.0,
-                    y: vertex_a_projected.y + 1.0,
-                    z: 1.0,
-                }
-                .multiply_by_scalar(0.5)
-                .multiply_by_scalar(window_width as f64);
-                let vertex_b_view = Vec3 {
-                    x: vertex_b_projected.x + 1.0,
-                    y: vertex_b_projected.y + 1.0,
-                    z: 1.0,
-                }
-                .multiply_by_scalar(0.5)
-                .multiply_by_scalar(window_width as f64);
-                let vertex_c_view = Vec3 {
-                    x: vertex_c_projected.x + 1.0,
-                    y: vertex_c_projected.y + 1.0,
-                    z: 1.0,
-                }
-                .multiply_by_scalar(0.5)
-                .multiply_by_scalar(window_width as f64);
+                        projected
+                            .add(&(1.0, 1.0, 1.0).into())
+                            .multiply_by_scalar(0.5)
+                            .multiply_by_scalar(window_width as f64)
+                    });
 
                 draw_triangle(
-                    (vertex_a_view.x, vertex_a_view.y).into(),
-                    (vertex_b_view.x, vertex_b_view.y).into(),
-                    (vertex_c_view.x, vertex_c_view.y).into(),
+                    (view_a.x, view_a.y).into(),
+                    (view_b.x, view_b.y).into(),
+                    (view_c.x, view_c.y).into(),
                     &mut canvas,
-                    Color::RGB((dot_prod*255.0) as u8, (dot_prod*255.0) as u8, (dot_prod*255.0) as u8)
+                    Color::RGB(
+                        (dot_prod * 255.0) as u8,
+                        (dot_prod * 255.0) as u8,
+                        (dot_prod * 255.0) as u8,
+                    ),
                 );
             }
         }
