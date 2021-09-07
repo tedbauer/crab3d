@@ -71,7 +71,7 @@ impl From<(f64, f64, f64, f64)> for Vec4 {
 
 impl Vec4 {
     pub fn multiply_by_scalar(&self, scalar: f64) -> Self {
-        Vec4 {
+        Self {
             x: self.x * scalar,
             y: self.y * scalar,
             z: self.z * scalar,
@@ -87,7 +87,7 @@ impl Vec4 {
                 + self.w * matrix[3][col]
         };
 
-        Vec4 {
+        Self {
             x: mult_col(0),
             y: mult_col(1),
             z: mult_col(2),
