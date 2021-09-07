@@ -1,4 +1,23 @@
+//! Vector and matrix math libary implementation.
 pub type Matrix4x4 = [[f64; 4]; 4];
+
+pub fn rotate_z(theta: f64) -> Matrix4x4 {
+    [
+        [theta.cos(), -theta.sin(), 0.0, 0.0],
+        [theta.sin(), theta.cos(), 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+}
+
+pub fn rotate_x(theta: f64) -> Matrix4x4 {
+    [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, theta.cos(), -theta.sin(), 0.0],
+        [0.0, theta.sin(), theta.cos(), 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+}
 
 #[derive(Clone, Debug)]
 pub struct Vec3 {

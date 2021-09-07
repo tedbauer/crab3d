@@ -3,7 +3,7 @@ extern crate sdl2;
 mod geometry;
 
 use crate::sdl2::gfx::primitives::DrawRenderer;
-use geometry::{Matrix4x4, Triangle, Vec3, Vec4};
+use geometry::{rotate_x, rotate_z, Matrix4x4, Triangle, Vec3, Vec4};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -327,25 +327,11 @@ pub fn main() {
         //i += 0.2;
         f_theta += 0.03;
 
-        let rotation_z: Matrix4x4 = [
-            [f_theta.cos(), -f_theta.sin(), 0.0, 0.0],
-            [f_theta.sin(), f_theta.cos(), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ];
-
-        let rotation_x: Matrix4x4 = [
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, f_theta.cos(), -f_theta.sin(), 0.0],
-            [0.0, f_theta.sin(), f_theta.cos(), 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ];
-
         for triangle in &cube_mesh {
             let rotated_translated_triangle = triangle.transform(|vertex: &Vec3| {
                 let rotated_triangle = Vec4::from((vertex.x, vertex.y, vertex.z, 1.0))
-                    .multiply_by_matrix(&rotation_z)
-                    .multiply_by_matrix(&rotation_x);
+                    .multiply_by_matrix(&rotate_z(f_theta))
+                    .multiply_by_matrix(&rotate_x(f_theta));
 
                 Vec3::from((rotated_triangle.x, rotated_triangle.y, rotated_triangle.z))
                     .add(&(0.0, 0.0, i).into())
