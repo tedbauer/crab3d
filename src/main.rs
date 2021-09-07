@@ -34,18 +34,6 @@ impl From<&Point2d> for Point {
     }
 }
 
-fn project_vertex(vec: &Vec3, projection_matrix: &Matrix4x4) -> Vec4 {
-    let projected = Vec4 {
-        x: vec.x,
-        y: vec.y,
-        z: vec.z,
-        w: 1.0,
-    }
-    .multiply_by_matrix(projection_matrix);
-    let scalar = if projected.w != 0.0 { projected.w } else { 1.0 };
-    projected.multiply_by_scalar(1.0 / scalar)
-}
-
 fn draw_triangle(
     a: Point2d,
     b: Point2d,
@@ -63,15 +51,9 @@ fn draw_triangle(
 }
 
 fn gen_mesh(obj_file: Lines<BufReader<File>>) -> Vec<Triangle> {
-    enum State {
-        ProcessingVertices,
-        ProcessingTriangles,
-    };
-
     let mut vertices: Vec<Vec3> = Vec::new();
     let mut triangles: Vec<Triangle> = Vec::new();
 
-    let mut state = State::ProcessingVertices;
     for line in obj_file {
         let line = line.unwrap();
         let line_input_type = line
