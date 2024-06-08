@@ -1,4 +1,4 @@
-# Crab3D Engine
+# Crab3D Model Renderer
 
 ![recording](./cube.gif)
 
