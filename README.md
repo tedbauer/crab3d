@@ -1,5 +1,7 @@
 # Crab3D Engine
 
+![recording](./cube.gif)
+
     $ brew install sdl2
     $ brew install sdl2_gfx
     $ cargo run
